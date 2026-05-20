@@ -223,8 +223,21 @@ BA.Engine = class Engine {
         this.bullets = [];
         this.effects = [];
 
+        // Generate a deterministic seed from the players list
+        let seed = 0;
+        if (playerInfos) {
+            for (const info of playerInfos) {
+                const idStr = String(info.id || '');
+                for (let i = 0; i < idStr.length; i++) {
+                    seed += idStr.charCodeAt(i);
+                }
+            }
+        }
+        const seedVal = seed > 0 ? (seed % 1000) / 1000 : 0.5;
+        const playerCount = playerInfos ? playerInfos.length : 2;
+
         // Generate fresh map
-        this.map = new BA.GameMap(this.selectedMap || 'farm');
+        this.map = new BA.GameMap(this.selectedMap || 'farm', seedVal, playerCount);
         const spawns = this.map.getSpawnPoints();
 
         // Sort spawn points first to ensure identical base order across all peers
@@ -232,15 +245,6 @@ BA.Engine = class Engine {
             if (a.x !== b.x) return a.x - b.x;
             return a.y - b.y;
         });
-
-        // Generate a deterministic seed from the players list
-        let seed = 0;
-        for (const info of playerInfos) {
-            const idStr = String(info.id || '');
-            for (let i = 0; i < idStr.length; i++) {
-                seed += idStr.charCodeAt(i);
-            }
-        }
 
         // Seed-based pseudo-random number generator
         const pseudoRandom = () => {
@@ -510,11 +514,21 @@ BA.Engine = class Engine {
         this.camera.x += (targetX - this.camera.x) * 0.1;
         this.camera.y += (targetY - this.camera.y) * 0.1;
 
-        // Clamp to map bounds
+        // Clamp to map bounds (or center if map is smaller than canvas)
         const halfW = this.canvas.width / 2;
         const halfH = this.canvas.height / 2;
-        this.camera.x = Math.max(halfW, Math.min(this.map.width - halfW, this.camera.x));
-        this.camera.y = Math.max(halfH, Math.min(this.map.height - halfH, this.camera.y));
+        
+        if (this.map.width <= this.canvas.width) {
+            this.camera.x = this.map.width / 2;
+        } else {
+            this.camera.x = Math.max(halfW, Math.min(this.map.width - halfW, this.camera.x));
+        }
+
+        if (this.map.height <= this.canvas.height) {
+            this.camera.y = this.map.height / 2;
+        } else {
+            this.camera.y = Math.max(halfH, Math.min(this.map.height - halfH, this.camera.y));
+        }
     }
 
     _checkGameOver() {

@@ -51,8 +51,10 @@ BA.Bullet = class Bullet {
         }
 
         // Check world bounds
-        if (this.x < 0 || this.x > (BA.MAP_COLS * BA.TILE_SIZE) ||
-            this.y < 0 || this.y > (BA.MAP_ROWS * BA.TILE_SIZE)) {
+        const limitX = map ? map.width : (BA.MAP_COLS * BA.TILE_SIZE);
+        const limitY = map ? map.height : (BA.MAP_ROWS * BA.TILE_SIZE);
+        if (this.x < 0 || this.x > limitX ||
+            this.y < 0 || this.y > limitY) {
             this.active = false;
             return false;
         }

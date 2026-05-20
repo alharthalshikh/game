@@ -140,6 +140,25 @@ BA.App = class App {
             });
         }
 
+        // Bind spectator return to lobby button
+        const btnPlayAgainFromSpectator = document.getElementById('btnPlayAgainFromSpectator');
+        if (btnPlayAgainFromSpectator) {
+            btnPlayAgainFromSpectator.addEventListener('click', () => {
+                this.returnToLobby();
+                // If online, broadcast to peers that we returned to lobby
+                if (this.isOnline && this.gameSync) {
+                    if (this.isHost) {
+                        this.gameSync.broadcastReturnToLobby();
+                    } else {
+                        // Regular client returns to lobby
+                        this.peerManager.sendTo(this.peerManager.connections.keys().next().value, {
+                            type: 'return_to_lobby'
+                        });
+                    }
+                }
+            });
+        }
+
         // Override menu buttons
         setTimeout(() => {
             const btnOnline = document.getElementById('btnOnlinePlay');
@@ -186,12 +205,14 @@ BA.App = class App {
     async createRoom() {
         this.isHost = true;
 
-        this.screens.showToast('جاري الاتصال بخادم الشبكة...');
+        this.screens.showLoading('جاري الاتصال بالخادم السحابي وإنشاء معركة...');
         try {
             const peerId = await this.peerManager.createRoom(this.playerName);
             this.engine.localPlayerId = this.peerManager.localPeerId; // Sync engine with PeerJS ID
+            this.screens.hideLoading();
         } catch (e) {
-            this.screens.showToast('فشل إنشاء الغرفة. تأكد من اتصال الإنترنت.');
+            this.screens.hideLoading();
+            this.screens.showToast('فشل إنشاء الغرفة. تأكد من خلو الغرف أو جرب مجدداً.');
             console.error(e);
         }
     }
@@ -200,11 +221,13 @@ BA.App = class App {
         this.isHost = false;
         this.currentRoomCode = roomId;
 
-        this.screens.showToast('جاري الانضمام للغرفة...');
+        this.screens.showLoading('جاري الاتصال والانضمام للمعركة...');
         try {
             await this.peerManager.joinRoom(roomId, this.playerName);
             this.engine.localPlayerId = this.peerManager.localPeerId; // Sync engine with PeerJS ID
+            this.screens.hideLoading();
         } catch (e) {
+            this.screens.hideLoading();
             this.screens.showToast('لم يتم العثور على الغرفة أو انتهت مهلة الاتصال.');
             console.error(e);
         }
@@ -353,6 +376,16 @@ BA.App = class App {
         if (this.peerManager) this.peerManager.disconnect();
         if (this.gameSync) this.gameSync.stopSync();
         this.lobbyPlayers = [];
+
+        // Hide spectator/respawn overlay and loading overlay if visible
+        const respawnOverlay = document.getElementById('respawnOverlay');
+        if (respawnOverlay) {
+            respawnOverlay.classList.add('hidden');
+        }
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
 
         // Re-init engine for next game
         this.engine.controls = new BA.Controls(this.engine.canvas);

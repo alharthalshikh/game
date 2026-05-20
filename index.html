@@ -209,9 +209,24 @@
             <h2>💀 لقد قُتلت!</h2>
             <p>أنت الآن في وضع المشاهدة...</p>
             <span id="respawnTimer" style="display:none;">0</span>
-            <button id="btnLeaveSpectator" class="btn btn-secondary" style="margin-top: 20px; display: inline-flex; width: auto; justify-content: center; align-self: center;">
-                🚪 خروج من اللعبة
-            </button>
+            <div class="respawn-buttons" style="display: flex; gap: 15px; margin-top: 25px; justify-content: center; flex-wrap: wrap;">
+                <button id="btnPlayAgainFromSpectator" class="btn btn-primary" style="display: inline-flex; width: auto; justify-content: center;">
+                    <span class="btn-icon">🚪</span>
+                    <span class="btn-text">العودة لغرفة الانتظار</span>
+                </button>
+                <button id="btnLeaveSpectator" class="btn btn-secondary" style="display: inline-flex; width: auto; justify-content: center;">
+                    <span class="btn-icon">🏠</span>
+                    <span class="btn-text">خروج من اللعبة</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ LOADING OVERLAY ═══════════ -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loadingText" style="margin-top: 15px; font-weight: 700; color: var(--gold);">جاري معالجة طلبك...</p>
         </div>
     </div>
 
@@ -227,7 +242,7 @@
                 <div id="aimThumb" class="aim-thumb"></div>
             </div>
         </div>
-        <button id="btnShoot" class="shoot-btn">
+        <button id="btnShoot" class="shoot-btn" style="display: none !important;">
             <span>🔫</span>
         </button>
     </div>

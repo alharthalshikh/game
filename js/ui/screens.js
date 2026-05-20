@@ -149,6 +149,20 @@ BA.Screens = class Screens {
     // ═══ MAIN MENU ═══
     _setupMainMenu() {
         const btnOnline = document.getElementById('btnOnlinePlay');
+        const input = document.getElementById('playerName');
+
+        // Load saved player name
+        if (input) {
+            const savedName = localStorage.getItem('BA_player_name');
+            if (savedName) {
+                input.value = savedName;
+                this.app.playerName = savedName;
+            } else {
+                const defaultName = 'مقاتل_' + Math.floor(Math.random() * 999);
+                input.value = defaultName;
+                this.app.playerName = defaultName;
+            }
+        }
 
         if (btnOnline) {
             btnOnline.addEventListener('click', () => {
@@ -168,6 +182,8 @@ BA.Screens = class Screens {
             name = 'مقاتل_' + Math.floor(Math.random() * 999);
             if (input) input.value = name;
         }
+        // Save to local storage
+        localStorage.setItem('BA_player_name', name);
         return name;
     }
 
@@ -439,5 +455,21 @@ BA.Screens = class Screens {
 
     showToast(message) {
         this._showToast(message);
+    }
+
+    showLoading(text) {
+        const overlay = document.getElementById('loadingOverlay');
+        const textEl = document.getElementById('loadingText');
+        if (overlay) {
+            if (textEl) textEl.textContent = text;
+            overlay.classList.remove('hidden');
+        }
+    }
+
+    hideLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
     }
 };

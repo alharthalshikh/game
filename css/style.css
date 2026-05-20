@@ -941,7 +941,36 @@ input[type="text"]::placeholder {
 }
 
 .aim-area {
-    display: none !important;
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    left: auto;
+    width: 140px;
+    height: 140px;
+    pointer-events: auto;
+}
+
+.aim-base {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.15);
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aim-thumb {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ef4444, #b91c1c);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    transition: none;
 }
 
 .shoot-btn {

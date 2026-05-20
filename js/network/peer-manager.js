@@ -52,7 +52,19 @@ BA.PeerManager = class PeerManager {
 
                 let openHandled = false;
 
+                const connectTimeout = setTimeout(() => {
+                    if (!openHandled) {
+                        console.warn(`Connection timeout for peerId: ${peerId}`);
+                        if (this.peer) {
+                            try { this.peer.destroy(); } catch(e){}
+                            this.peer = null;
+                        }
+                        reject(new Error('timeout'));
+                    }
+                }, 2000); // 2.0 seconds fast timeout!
+
                 this.peer.on('open', (id) => {
+                    clearTimeout(connectTimeout);
                     this.localPeerId = id;
                     console.log('PeerJS connected with ID:', id);
                     openHandled = true;
@@ -60,6 +72,7 @@ BA.PeerManager = class PeerManager {
                 });
 
                 this.peer.on('error', (err) => {
+                    clearTimeout(connectTimeout);
                     console.warn('PeerJS error:', err.type, err.message);
                     if (!openHandled) {
                         if (this.peer) {
