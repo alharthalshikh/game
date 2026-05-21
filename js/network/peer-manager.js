@@ -4,6 +4,25 @@
    ═══════════════════════════════════════════ */
 window.BA = window.BA || {};
 
+// Robust ICE servers configuration including Google's public STUN servers
+// and free TURN servers from the Open Relay Project for NAT traversal.
+const ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    {
+        urls: [
+            'turn:openrelay.metered.ca:80',
+            'turn:openrelay.metered.ca:443',
+            'turns:openrelay.metered.ca:443'
+        ],
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+    }
+];
+
 BA.PeerManager = class PeerManager {
     constructor() {
         this.peer = null;
@@ -43,10 +62,7 @@ BA.PeerManager = class PeerManager {
                 this.peer = new Peer(peerId, {
                     debug: 0,
                     config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                        ]
+                        iceServers: ICE_SERVERS
                     }
                 });
 
@@ -61,7 +77,7 @@ BA.PeerManager = class PeerManager {
                         }
                         reject(new Error('timeout'));
                     }
-                }, 2000); // 2.0 seconds fast timeout!
+                }, 8000); // Increased timeout to 8.0 seconds for remote/mobile connections
 
                 this.peer.on('open', (id) => {
                     clearTimeout(connectTimeout);
@@ -347,10 +363,7 @@ BA.PeerManager = class PeerManager {
             scanPeer = new Peer(scanPeerId, {
                 debug: 0,
                 config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                    ]
+                    iceServers: ICE_SERVERS
                 }
             });
         } catch (e) {
