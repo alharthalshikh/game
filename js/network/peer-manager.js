@@ -23,6 +23,17 @@ const ICE_SERVERS = [
     }
 ];
 
+// Helper function to output network debugging information directly to the UI console
+function logDebug(msg) {
+    console.log("[NetworkDebug]", msg);
+    const el = document.getElementById('networkDebugLog');
+    if (el) {
+        el.style.display = 'block';
+        el.innerHTML += `<div style="margin-bottom: 2px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; text-align: left;">${msg}</div>`;
+        el.scrollTop = el.scrollHeight;
+    }
+}
+
 BA.PeerManager = class PeerManager {
     constructor() {
         this.peer = null;
@@ -58,6 +69,7 @@ BA.PeerManager = class PeerManager {
             try {
                 // Use PeerJS cloud server for signaling
                 const peerId = customId || 'ba_' + Math.random().toString(36).substr(2, 8);
+                logDebug(`Initializing Peer session (ID: ${peerId})...`);
 
                 this.peer = new Peer(peerId, {
                     debug: 0,
@@ -70,7 +82,7 @@ BA.PeerManager = class PeerManager {
 
                 const connectTimeout = setTimeout(() => {
                     if (!openHandled) {
-                        console.warn(`Connection timeout for peerId: ${peerId}`);
+                        logDebug(`⚠️ Peer connection timed out for ID: ${peerId}`);
                         if (this.peer) {
                             try { this.peer.destroy(); } catch(e){}
                             this.peer = null;
@@ -82,14 +94,14 @@ BA.PeerManager = class PeerManager {
                 this.peer.on('open', (id) => {
                     clearTimeout(connectTimeout);
                     this.localPeerId = id;
-                    console.log('PeerJS connected with ID:', id);
+                    logDebug(`✅ Peer opened successfully! ID: ${id}`);
                     openHandled = true;
                     resolve(id);
                 });
 
                 this.peer.on('error', (err) => {
                     clearTimeout(connectTimeout);
-                    console.warn('PeerJS error:', err.type, err.message);
+                    logDebug(`❌ Peer Error [${err.type}]: ${err.message}`);
                     if (!openHandled) {
                         if (this.peer) {
                             try { this.peer.destroy(); } catch(e){}
@@ -104,15 +116,17 @@ BA.PeerManager = class PeerManager {
                 });
 
                 this.peer.on('disconnected', () => {
-                    console.log('PeerJS disconnected');
+                    logDebug('🔌 Disconnected from signaling server.');
                 });
 
                 // Handle incoming connections (host only)
                 this.peer.on('connection', (conn) => {
+                    logDebug(`🔔 Incoming connection request from: ${conn.peer}`);
                     this._setupConnection(conn);
                 });
 
             } catch (e) {
+                logDebug(`❌ Peer initialization failed: ${e.message}`);
                 reject(e);
             }
         });
@@ -359,6 +373,8 @@ BA.PeerManager = class PeerManager {
         const scanPeerId = 'ba_scan_' + Math.random().toString(36).substr(2, 6);
         let scanPeer;
         
+        logDebug(`🔍 Starting active rooms scan (Scan ID: ${scanPeerId})...`);
+
         try {
             scanPeer = new Peer(scanPeerId, {
                 debug: 0,
@@ -367,42 +383,49 @@ BA.PeerManager = class PeerManager {
                 }
             });
         } catch (e) {
-            console.error('Failed to create scan peer:', e);
+            logDebug(`❌ Failed to create scan peer: ${e.message}`);
             return;
         }
 
         scanPeer.on('open', () => {
+            logDebug(`📡 Scan peer online! Pinging global rooms 1 to 5...`);
             for (let i = 1; i <= 5; i++) {
                 const roomId = 'ba_room_' + i;
+                logDebug(`🔄 Pinging Room ${i} (ID: ${roomId})...`);
+                
                 const conn = scanPeer.connect(roomId, {
                     reliable: true
                 });
 
                 const cleanup = setTimeout(() => {
+                    logDebug(`⏳ Room ${i} ping timeout (6s)`);
                     try { conn.close(); } catch(e){}
                 }, 6000); // Give PeerJS 6 seconds to negotiate P2P on slow networks
 
                 conn.on('open', () => {
+                    logDebug(`⚡ WebRTC channel opened with Room ${i}! Sending ping...`);
                     conn.send({ type: 'ping' });
                 });
 
                 conn.on('data', (data) => {
                     if (data && data.type === 'pong') {
                         clearTimeout(cleanup);
+                        logDebug(`🎉 SUCCESS: Received Pong from Room ${i} (Host: ${data.hostName})!`);
                         try { conn.close(); } catch(e){}
                         onRoomFound({ num: i, hostName: data.hostName });
                     }
                 });
 
-                conn.on('error', () => {
+                conn.on('error', (err) => {
                     clearTimeout(cleanup);
+                    logDebug(`⚠️ Room ${i} handshake error: ${err ? (err.type || err.message || err) : 'failed'}`);
                     try { conn.close(); } catch(e){}
                 });
             }
         });
 
         scanPeer.on('error', (err) => {
-            console.warn('Scan peer error:', err.type, err.message);
+            logDebug(`⚠️ Scanner Peer Error: ${err.type} - ${err.message}`);
             if (err && err.type !== 'peer-unavailable') {
                 try { scanPeer.destroy(); } catch(e){}
             }
@@ -410,6 +433,7 @@ BA.PeerManager = class PeerManager {
 
         // Destroy the scan peer after 7 seconds to free resources
         setTimeout(() => {
+            logDebug(`🧹 Cleaning up scan session ${scanPeerId}`);
             try { scanPeer.destroy(); } catch(e){}
         }, 7000);
     }
